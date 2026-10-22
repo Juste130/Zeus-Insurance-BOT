@@ -10,7 +10,7 @@ import {
   AgreementStatus,
 } from "../src/index.js";
 import { CONTRACT_ADDRESSES } from "../../frontend/src/lib/contracts.js";
-import { assertDepositReceiptSuccess } from "../../frontend/src/lib/escrow-receipt.js";
+import { assertDepositReceiptSuccess, assertDepositTarget } from "../../frontend/src/lib/escrow-receipt.js";
 
 const MOCK_ADDRESS = "0x1234567890123456789012345678901234567890";
 const MOCK_EXECUTOR = "0xAbCdEf0123456789AbCdEf0123456789AbCdEf01";
@@ -307,6 +307,31 @@ describe("Escrow deposit receipt", () => {
     assert.throws(
       () => assertDepositReceiptSuccess({ status: "reverted", transactionHash }),
       /Transaction reverted on-chain .*No agreement was created/,
+    );
+  });
+});
+
+// ─── Escrow deposit target (frontend) ────────────────────────────────────────
+
+describe("Escrow deposit target", () => {
+  const expected = CONTRACT_ADDRESSES[677].escrow;
+  const code = "0x6080604052" as const;
+
+  it("accepts the expected escrow address with bytecode (case-insensitive)", () => {
+    assert.doesNotThrow(() => assertDepositTarget(expected, expected, code));
+    assert.doesNotThrow(() => assertDepositTarget(expected.toLowerCase(), expected, code));
+  });
+
+  it("rejects the expected address when it has no bytecode", () => {
+    for (const empty of [undefined, "", "0x"] as const) {
+      assert.throws(() => assertDepositTarget(expected, expected, empty), /No contract deployed/);
+    }
+  });
+
+  it("rejects an address different from the expected escrow", () => {
+    assert.throws(
+      () => assertDepositTarget("0x87365462353bCBAB2CF0DF57c7Cb15519C5B7c76", expected, code),
+      /Unexpected escrow address/,
     );
   });
 });

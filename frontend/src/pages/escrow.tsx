@@ -40,7 +40,8 @@ import { Loader2, KeyRound, ShieldCheck, Copy, Check, AlertTriangle } from "luci
 import { useToast } from "@/hooks/use-toast";
 import { WalletModal } from "@/components/wallet-modal";
 import { botChainMainnet } from "@/lib/wagmi";
-import { assertDepositReceiptSuccess } from "@/lib/escrow-receipt";
+import { CONTRACT_ADDRESSES } from "@/lib/contracts";
+import { assertDepositReceiptSuccess, assertDepositTarget } from "@/lib/escrow-receipt";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -148,6 +149,8 @@ function CreateAgreementForm({ onSuccess }: { onSuccess: () => void }) {
         timeoutSeconds: Number(timeout),
       });
       if (!publicClient) throw new Error("No BOT Chain RPC client available to confirm the transaction.");
+      const code = await publicClient.getCode({ address: to });
+      assertDepositTarget(to, CONTRACT_ADDRESSES[677].escrow, code);
       const hash = await sendTransactionAsync({ to, data, chainId: botChainMainnet.id });
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       assertDepositReceiptSuccess(receipt);
